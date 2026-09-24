@@ -1,12 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import LoginPage from './pages/LoginPage';
 
 // componentes temporários apenas para ver se tá funcionando!!
-const LoginPlaceholder = () => (
-  <div style={{ padding: '2rem', textAlign: 'center' }}>
-    <h2>Login</h2>
-  </div>
-);
-
 const AdminDashboardPlaceholder = () => (
   <div style={{ padding: '2rem' }}>
     <h2>Painel Admin</h2>
@@ -30,7 +25,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/login" element={<LoginPlaceholder />} />
+        <Route path="/login" element={<LoginPage />} />
         <Route path="/admin" element={<AdminDashboardPlaceholder />} />
         <Route path="/gestor/fiscalizadores" element={<GestorPlaceholder />} />
         <Route path="*" element={<NotFoundPlaceholder />} />
