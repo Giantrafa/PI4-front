@@ -1,0 +1,1 @@
+export const API_URL = "IP_LOCAL";  // se quiserem testar por enquanto que não ta hospedado, coloquem o IP local de vocês para rodar com o back local
