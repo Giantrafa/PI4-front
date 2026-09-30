@@ -1,14 +1,33 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
+import { api } from '../lib/api';
+
+async function fazerLogin(email, senha) {
+  const response = await api.post('/auth/login', { email, senha });
+  return response.data;
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
+  const loginMutation = useMutation({
+    mutationFn: () => fazerLogin(email, password),
+    onSuccess: (data) => {
+      localStorage.setItem('token', data.token);
+      navigate('/', { replace: true });
+    },
+    onError: (error) => {
+      console.error(error);
+      alert('E-mail ou senha inválidos');
+    }
+  });
+
   const handleSubmit = (e) => {
     e.preventDefault(); 
-    console.log('Dados de login:', { email, password }); //apenas uma simulação do envio por enquanto!!
+    loginMutation.mutate(); 
   };
 
   return (
@@ -40,12 +59,24 @@ export default function LoginPage() {
           />
         </div>
 
-        <button 
-          type="submit" 
-          style={{ width: '50%', padding: '0.75rem', backgroundColor: '#007bff', color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}
-        >
-          Entrar
-        </button>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <button 
+            type="submit" 
+            disabled={loginMutation.isPending}
+            style={{ 
+              width: '50%', 
+              padding: '0.75rem', 
+              backgroundColor: loginMutation.isPending ? '#a0c4ff' : '#007bff', 
+              color: '#fff', 
+              border: 'none', 
+              borderRadius: '4px', 
+              fontWeight: 'bold', 
+              cursor: loginMutation.isPending ? 'not-allowed' : 'pointer' 
+            }}
+          >
+            {loginMutation.isPending ? 'Entrando...' : 'Entrar'}
+          </button>
+        </div>
       </form>
     </div>
   );

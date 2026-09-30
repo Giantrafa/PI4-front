@@ -1,34 +1,19 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
-
-// componentes temporários apenas para ver se tá funcionando!!
-const AdminDashboardPlaceholder = () => (
-  <div style={{ padding: '2rem' }}>
-    <h2>Painel Admin</h2>
-  </div>
-);
-
-const GestorPlaceholder = () => (
-  <div style={{ padding: '2rem' }}>
-    <h2>Painel Gestor</h2>
-  </div>
-);
-
-const NotFoundPlaceholder = () => (
-  <div style={{ padding: '2rem', textAlign: 'center' }}>
-    <h2>404 - Página Não Encontrada</h2>
-  </div>
-);
+import PrivateRoute from './components/PrivateRoute';
+import AppLayout from './components/AppLayout';
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/admin" element={<AdminDashboardPlaceholder />} />
-        <Route path="/gestor/fiscalizadores" element={<GestorPlaceholder />} />
-        <Route path="*" element={<NotFoundPlaceholder />} />
+
+        <Route element={<PrivateRoute />}>
+          <Route element={<AppLayout />}>
+            <Route path="/" element={<div style={{ fontSize: '1.2rem', color: '#333' }}>Bem-vindo ao Sistema Procon! Escolha uma opção no menu.</div>} />
+          </Route>
+        </Route>
       </Routes>
     </BrowserRouter>
   );
