@@ -1,5 +1,20 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '../lib/api';
+
+async function criarUsuario(dados) {
+  const response = await api.post('/usuarios', dados);
+  return response.data;
+}
+
+function mensagemDeErro(error) {
+  const resposta = error.response?.data;
+  if (!resposta?.mensagem) {
+    return ['Não foi possível salvar o usuário. Tente novamente.'];
+  }
+  return [resposta.mensagem, ...(resposta.erros ?? [])];
+}
 
 const labelStyle = { display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: '#555' };
 const inputStyle = { width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid #ccc', boxSizing: 'border-box' };
@@ -11,15 +26,32 @@ export default function AdminUsuarioFormPage() {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [role, setRole] = useState('gestor');
+  const queryClient = useQueryClient();
+
+  const criarMutation = useMutation({
+    mutationFn: () => criarUsuario({ nome, email, senha, role }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['usuarios'] });
+      navigate('/admin/usuarios');
+    },
+  });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Envio para POST /usuarios será feito na próxima tarefa
+    criarMutation.mutate();
   };
 
   return (
     <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', maxWidth: '500px' }}>
       <h2 style={{ marginTop: 0, marginBottom: '1.5rem', color: '#333' }}>Novo usuário</h2>
+
+      {criarMutation.isError && (
+        <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#fdecea', color: '#c0392b', borderRadius: '4px', fontSize: '0.9rem' }}>
+          {mensagemDeErro(criarMutation.error).map((msg, i) => (
+            <div key={i}>{msg}</div>
+          ))}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit}>
         <div style={campoStyle}>
@@ -76,9 +108,18 @@ export default function AdminUsuarioFormPage() {
           </button>
           <button
             type="submit"
-            style={{ padding: '0.6rem 1rem', backgroundColor: '#007bff', color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}
+            disabled={criarMutation.isPending}
+            style={{
+              padding: '0.6rem 1rem',
+              backgroundColor: criarMutation.isPending ? '#a0c4ff' : '#007bff',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '4px',
+              fontWeight: 'bold',
+              cursor: criarMutation.isPending ? 'not-allowed' : 'pointer'
+            }}
           >
-            Salvar
+            {criarMutation.isPending ? 'Salvando...' : 'Salvar'}
           </button>
         </div>
       </form>
