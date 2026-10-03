@@ -16,6 +16,7 @@ export default function App() {
             <Route path="/" element={<div style={{ fontSize: '1.2rem', color: '#333' }}>Bem-vindo ao Sistema Procon! Escolha uma opção no menu.</div>} />
             <Route path="/admin/usuarios" element={<AdminUsuariosPage />} />
             <Route path="/admin/usuarios/novo" element={<AdminUsuarioFormPage />} />
+            <Route path="/admin/usuarios/:id/editar" element={<AdminUsuarioFormPage />} />
           </Route>
         </Route>
       </Routes>

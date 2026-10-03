@@ -1,10 +1,20 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 
 async function criarUsuario(dados) {
   const response = await api.post('/usuarios', dados);
+  return response.data;
+}
+
+async function buscarUsuario(id) {
+  const response = await api.get(`/usuarios/${id}`);
+  return response.data;
+}
+
+async function atualizarUsuario(id, dados) {
+  const response = await api.put(`/usuarios/${id}`, dados);
   return response.data;
 }
 
@@ -21,33 +31,66 @@ const inputStyle = { width: '100%', padding: '0.75rem', borderRadius: '4px', bor
 const campoStyle = { marginBottom: '1rem' };
 
 export default function AdminUsuarioFormPage() {
-  const navigate = useNavigate();
-  const [nome, setNome] = useState('');
-  const [email, setEmail] = useState('');
-  const [senha, setSenha] = useState('');
-  const [role, setRole] = useState('gestor');
-  const queryClient = useQueryClient();
+  const { id } = useParams();
 
-  const criarMutation = useMutation({
-    mutationFn: () => criarUsuario({ nome, email, senha, role }),
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['usuario', id],
+    queryFn: () => buscarUsuario(id),
+    enabled: !!id,
+  });
+
+  if (id && isLoading) {
+    return <p style={{ color: '#555' }}>Carregando usuário...</p>;
+  }
+
+  if (id && isError) {
+    return <p style={{ color: '#e74c3c' }}>Erro ao carregar usuário.</p>;
+  }
+
+  return <UsuarioForm key={id ?? 'novo'} id={id} usuario={data} />;
+}
+
+function UsuarioForm({ id, usuario }) {
+  const navigate = useNavigate();
+  const [nome, setNome] = useState(usuario?.nome ?? '');
+  const [email, setEmail] = useState(usuario?.email ?? '');
+  const [senha, setSenha] = useState('');
+  const [role, setRole] = useState(usuario?.role ?? 'gestor');
+  const queryClient = useQueryClient();
+  const isEdicao = !!id;
+
+  const salvarMutation = useMutation({
+    mutationFn: () => {
+      if (!isEdicao) {
+        return criarUsuario({ nome, email, senha, role });
+      }
+      const dados = { nome, email, role };
+      if (senha) {
+        dados.senha = senha;
+      }
+      return atualizarUsuario(id, dados);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['usuarios'] });
+      if (isEdicao) {
+        queryClient.invalidateQueries({ queryKey: ['usuario', id] });
+      }
       navigate('/admin/usuarios');
     },
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    criarMutation.mutate();
+    salvarMutation.mutate();
   };
 
   return (
     <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', maxWidth: '500px' }}>
-      <h2 style={{ marginTop: 0, marginBottom: '1.5rem', color: '#333' }}>Novo usuário</h2>
+      <h2 style={{ marginTop: 0, marginBottom: '1.5rem', color: '#333' }}>{isEdicao ? 'Editar usuário' : 'Novo usuário'}</h2>
 
-      {criarMutation.isError && (
+      {salvarMutation.isError && (
         <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#fdecea', color: '#c0392b', borderRadius: '4px', fontSize: '0.9rem' }}>
-          {mensagemDeErro(criarMutation.error).map((msg, i) => (
+          {mensagemDeErro(salvarMutation.error).map((msg, i) => (
             <div key={i}>{msg}</div>
           ))}
         </div>
@@ -84,8 +127,8 @@ export default function AdminUsuarioFormPage() {
             type="password"
             value={senha}
             onChange={(e) => setSenha(e.target.value)}
-            required
-            placeholder="Digite uma senha"
+            required={!isEdicao}
+            placeholder={isEdicao ? 'Deixe em branco para manter a atual' : 'Digite uma senha'}
             style={inputStyle}
           />
         </div>
@@ -108,18 +151,18 @@ export default function AdminUsuarioFormPage() {
           </button>
           <button
             type="submit"
-            disabled={criarMutation.isPending}
+            disabled={salvarMutation.isPending}
             style={{
               padding: '0.6rem 1rem',
-              backgroundColor: criarMutation.isPending ? '#a0c4ff' : '#007bff',
+              backgroundColor: salvarMutation.isPending ? '#a0c4ff' : '#007bff',
               color: '#fff',
               border: 'none',
               borderRadius: '4px',
               fontWeight: 'bold',
-              cursor: criarMutation.isPending ? 'not-allowed' : 'pointer'
+              cursor: salvarMutation.isPending ? 'not-allowed' : 'pointer'
             }}
           >
-            {criarMutation.isPending ? 'Salvando...' : 'Salvar'}
+            {salvarMutation.isPending ? 'Salvando...' : 'Salvar'}
           </button>
         </div>
       </form>

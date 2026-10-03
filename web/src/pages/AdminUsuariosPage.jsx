@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 
 const ROLES_LISTADOS = ['gestor', 'fiscalizador'];
@@ -14,6 +14,11 @@ async function buscarUsuarios() {
   return response.data;
 }
 
+async function excluirUsuario(id) {
+  const response = await api.delete(`/usuarios/${id}`);
+  return response.data;
+}
+
 const thStyle = { textAlign: 'left', padding: '0.75rem', borderBottom: '2px solid #ddd', color: '#555', fontSize: '0.9rem' };
 const tdStyle = { padding: '0.75rem', borderBottom: '1px solid #eee', color: '#333' };
 
@@ -24,6 +29,24 @@ export default function AdminUsuariosPage() {
     queryKey: ['usuarios'],
     queryFn: buscarUsuarios,
   });
+
+  const queryClient = useQueryClient();
+
+  const excluirMutation = useMutation({
+    mutationFn: excluirUsuario,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['usuarios'] });
+    },
+    onError: (error) => {
+      alert(error.response?.data?.mensagem ?? 'Não foi possível excluir o usuário.');
+    },
+  });
+
+  const handleExcluir = (usuario) => {
+    if (window.confirm(`Excluir o usuário ${usuario.nome}?`)) {
+      excluirMutation.mutate(usuario.id);
+    }
+  };
 
   const usuarios = (data ?? []).filter((u) => ROLES_LISTADOS.includes(u.role));
 
@@ -54,6 +77,7 @@ export default function AdminUsuariosPage() {
               <th style={thStyle}>Nome</th>
               <th style={thStyle}>E-mail</th>
               <th style={thStyle}>Perfil</th>
+              <th style={thStyle}>Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -62,6 +86,23 @@ export default function AdminUsuariosPage() {
                 <td style={tdStyle}>{usuario.nome}</td>
                 <td style={tdStyle}>{usuario.email}</td>
                 <td style={tdStyle}>{ROLE_LABEL[usuario.role]}</td>
+                <td style={tdStyle}>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      onClick={() => navigate(`/admin/usuarios/${usuario.id}/editar`)}
+                      style={{ padding: '0.4rem 0.75rem', backgroundColor: '#fff', color: '#007bff', border: '1px solid #007bff', borderRadius: '4px', cursor: 'pointer' }}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => handleExcluir(usuario)}
+                      disabled={excluirMutation.isPending}
+                      style={{ padding: '0.4rem 0.75rem', backgroundColor: '#e74c3c', color: '#fff', border: 'none', borderRadius: '4px', cursor: excluirMutation.isPending ? 'not-allowed' : 'pointer' }}
+                    >
+                      Excluir
+                    </button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
