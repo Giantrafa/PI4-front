@@ -1,5 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../lib/api';
+import { useNovaVisitaStore } from '../store/novaVisitaStore';
+
+async function buscarUsuarios() {
+  const response = await api.get('/usuarios');
+  return response.data;
+}
 
 const labelStyle = { display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: '#555' };
 const inputStyle = { width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid #ccc', boxSizing: 'border-box', fontFamily: 'inherit' };
@@ -10,6 +18,21 @@ export default function GestorNovaVisitaPage() {
   const [denunciado, setDenunciado] = useState('');
   const [endereco, setEndereco] = useState('');
   const [descricao, setDescricao] = useState('');
+
+  const fiscalizadoresSelecionados = useNovaVisitaStore((state) => state.fiscalizadoresSelecionados);
+  const toggleFiscalizador = useNovaVisitaStore((state) => state.toggleFiscalizador);
+  const limparSelecao = useNovaVisitaStore((state) => state.limparSelecao);
+
+  useEffect(() => {
+    return () => limparSelecao();
+  }, [limparSelecao]);
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['usuarios'],
+    queryFn: buscarUsuarios,
+  });
+
+  const fiscalizadores = (data ?? []).filter((u) => u.role === 'fiscalizador');
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -51,6 +74,30 @@ export default function GestorNovaVisitaPage() {
             placeholder="Descreva a denúncia"
             style={{ ...inputStyle, resize: 'vertical' }}
           />
+        </div>
+
+        <div style={{ marginBottom: '1.5rem' }}>
+          <label style={labelStyle}>Fiscalizadores</label>
+
+          {isLoading && <p style={{ color: '#555', margin: 0 }}>Carregando fiscalizadores...</p>}
+
+          {isError && <p style={{ color: '#e74c3c', margin: 0 }}>Erro ao carregar fiscalizadores.</p>}
+
+          {!isLoading && !isError && fiscalizadores.length === 0 && (
+            <p style={{ color: '#555', margin: 0 }}>Nenhum fiscalizador cadastrado.</p>
+          )}
+
+          {!isLoading && !isError && fiscalizadores.map((fiscalizador) => (
+            <label key={fiscalizador.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0', color: '#333', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={fiscalizadoresSelecionados.includes(fiscalizador.id)}
+                onChange={() => toggleFiscalizador(fiscalizador.id)}
+              />
+              {fiscalizador.nome}
+              <span style={{ color: '#888', fontSize: '0.85rem' }}>({fiscalizador.email})</span>
+            </label>
+          ))}
         </div>
 
         <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
