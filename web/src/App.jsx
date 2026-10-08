@@ -5,6 +5,7 @@ import AppLayout from './components/AppLayout';
 import AdminUsuariosPage from './pages/AdminUsuariosPage';
 import AdminUsuarioFormPage from './pages/AdminUsuarioFormPage';
 import GestorFiscalizadoresPage from './pages/GestorFiscalizadoresPage';
+import GestorNovaVisitaPage from './pages/GestorNovaVisitaPage';
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
             <Route path="/admin/usuarios/novo" element={<AdminUsuarioFormPage />} />
             <Route path="/admin/usuarios/:id/editar" element={<AdminUsuarioFormPage />} />
             <Route path="/gestor/fiscalizadores" element={<GestorFiscalizadoresPage />} />
+            <Route path="/gestor/visitas/nova" element={<GestorNovaVisitaPage />} />
           </Route>
         </Route>
       </Routes>
