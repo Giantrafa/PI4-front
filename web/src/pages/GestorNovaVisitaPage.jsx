@@ -22,9 +22,22 @@ function mensagemDeErro(error) {
   return [resposta.mensagem, ...(resposta.erros ?? [])];
 }
 
+function validar({ denunciado, dataAgendada }) {
+  const erros = {};
+  if (!denunciado.trim()) {
+    erros.denunciado = 'Informe os dados do denunciado.';
+  }
+  if (!dataAgendada) {
+    erros.dataAgendada = 'Informe a data agendada.';
+  }
+  return erros;
+}
+
 const labelStyle = { display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: '#555' };
 const inputStyle = { width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid #ccc', boxSizing: 'border-box', fontFamily: 'inherit' };
 const campoStyle = { marginBottom: '1rem' };
+const erroCampoStyle = { marginTop: '0.35rem', color: '#c0392b', fontSize: '0.85rem' };
+const inputComErro = (temErro) => (temErro ? { ...inputStyle, borderColor: '#e74c3c' } : inputStyle);
 
 export default function GestorNovaVisitaPage() {
   const navigate = useNavigate();
@@ -32,6 +45,7 @@ export default function GestorNovaVisitaPage() {
   const [endereco, setEndereco] = useState('');
   const [descricao, setDescricao] = useState('');
   const [dataAgendada, setDataAgendada] = useState('');
+  const [erros, setErros] = useState({});
   const queryClient = useQueryClient();
 
   const fiscalizadoresSelecionados = useNovaVisitaStore((state) => state.fiscalizadoresSelecionados);
@@ -65,6 +79,11 @@ export default function GestorNovaVisitaPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const novosErros = validar({ denunciado, dataAgendada });
+    setErros(novosErros);
+    if (Object.keys(novosErros).length > 0) {
+      return;
+    }
     criarMutation.mutate();
   };
 
@@ -82,14 +101,15 @@ export default function GestorNovaVisitaPage() {
 
       <form onSubmit={handleSubmit}>
         <div style={campoStyle}>
-          <label style={labelStyle}>Dados do denunciado</label>
+          <label style={labelStyle}>Dados do denunciado *</label>
           <input
             type="text"
             value={denunciado}
             onChange={(e) => setDenunciado(e.target.value)}
             placeholder="Nome ou razão social do denunciado"
-            style={inputStyle}
+            style={inputComErro(erros.denunciado)}
           />
+          {erros.denunciado && <div style={erroCampoStyle}>{erros.denunciado}</div>}
         </div>
 
         <div style={campoStyle}>
@@ -104,13 +124,14 @@ export default function GestorNovaVisitaPage() {
         </div>
 
         <div style={campoStyle}>
-          <label style={labelStyle}>Data agendada</label>
+          <label style={labelStyle}>Data agendada *</label>
           <input
             type="datetime-local"
             value={dataAgendada}
             onChange={(e) => setDataAgendada(e.target.value)}
-            style={inputStyle}
+            style={inputComErro(erros.dataAgendada)}
           />
+          {erros.dataAgendada && <div style={erroCampoStyle}>{erros.dataAgendada}</div>}
         </div>
 
         <div style={{ marginBottom: '1.5rem' }}>
